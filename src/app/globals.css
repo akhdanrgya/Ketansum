@@ -2156,3 +2156,222 @@ td strong {
 .cart .helper {
   margin-bottom: 8px;
 }
+
+/* Admin mobile and installed app */
+.admin-mobile-nav {
+  display: none;
+}
+.admin-main,
+.admin-content,
+.panel,
+.pos-layout > *,
+.expense-layout > * {
+  min-width: 0;
+}
+.pwa-panel {
+  margin-bottom: 16px;
+}
+.pwa-panel:empty {
+  display: none;
+}
+.pwa-install {
+  border: 1px solid #b8c9df;
+  background: #eaf1fb;
+  color: #064696;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (max-width: 850px) {
+  .sidebar {
+    visibility: hidden;
+    padding-top: max(22px, env(safe-area-inset-top));
+    padding-bottom: max(22px, env(safe-area-inset-bottom));
+    width: min(300px, 88vw);
+  }
+  .sidebar.open {
+    visibility: visible;
+  }
+  .admin-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+    min-height: 64px;
+    gap: 10px;
+  }
+  .admin-topbar > div {
+    min-width: 0;
+  }
+  .admin-topbar .user-chip {
+    max-width: 35%;
+    overflow: hidden;
+    font-size: 12px;
+  }
+  .admin-main {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .admin-mobile-nav {
+    display: flex;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 25;
+    background: #fffef8;
+    border-top: 1px solid var(--line);
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 20px #152b4910;
+  }
+  .admin-mobile-nav a,
+  .admin-mobile-nav button {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 52px;
+    border: 0;
+    background: none;
+    color: #626d7b;
+    font:
+      600 12px/1.3 Arial,
+      sans-serif;
+    border-radius: 10px;
+  }
+  .admin-mobile-nav [aria-current="page"] {
+    background: #e7effb;
+    color: #064696;
+  }
+  .admin-shell input,
+  .admin-shell select,
+  .admin-shell textarea,
+  .login-page input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .admin-shell input[type="checkbox"] {
+    min-height: 22px;
+    min-width: 22px;
+  }
+  .admin-shell .icon-button,
+  .admin-shell .text-link,
+  .admin-shell .side-back {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .pos-layout,
+  .expense-layout {
+    grid-template-columns: 1fr;
+  }
+  .cart {
+    position: static;
+  }
+  .report-toolbar {
+    flex-wrap: wrap;
+  }
+  .table-scroll {
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+  }
+}
+@media (max-width: 560px) {
+  .admin-content {
+    padding: 20px 14px;
+  }
+  .admin-heading {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .admin-heading h1 {
+    overflow-wrap: anywhere;
+  }
+  .date-range {
+    flex-wrap: wrap;
+  }
+  .date-range input {
+    font-size: 16px;
+    min-width: 0;
+  }
+  .panel {
+    padding: 16px;
+  }
+  .pos-product .product-art {
+    height: 125px;
+  }
+  .pos-product strong {
+    font-size: 14px;
+  }
+  .pos-product > div:last-child {
+    padding: 12px;
+  }
+  .dialog,
+  .dialog:has(.qris) {
+    width: calc(100% - 16px);
+    max-height: calc(100dvh - 16px - env(safe-area-inset-top));
+    padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+    border-radius: 16px;
+  }
+  .dialog-heading {
+    gap: 8px;
+  }
+  .dialog-heading h2 {
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+  .dialog .receipt {
+    overflow-wrap: anywhere;
+  }
+  .order-table,
+  .order-table tbody,
+  .order-table tr,
+  .order-table td {
+    display: block;
+    white-space: normal;
+  }
+  .order-table thead {
+    display: none;
+  }
+  .order-table tr {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .order-table td {
+    padding: 7px 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .order-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    color: #626d7b;
+    margin-bottom: 4px;
+  }
+  .order-table td {
+    font-size: 14px;
+  }
+  .order-table .text-link {
+    width: 100%;
+    text-align: center;
+    background: #eaf1fb;
+    border-radius: 8px;
+  }
+  .form-grid,
+  .team-form form {
+    grid-template-columns: 1fr;
+  }
+}
+@media print {
+  .admin-mobile-nav,
+  .pwa-panel {
+    display: none !important;
+  }
+}

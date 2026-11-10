@@ -28,6 +28,7 @@ import { applyCommand } from "@/lib/demo";
 import { day, report, rupiah } from "@/lib/finance";
 import type { Workspace, Command, Product, Order } from "@/lib/types";
 import { ProductArt } from "./product-art";
+import { AdminPwa } from "./admin/pwa";
 import { Team } from "./admin/team";
 const links = [
   ["dashboard", "Ringkasan", LayoutDashboard],
@@ -130,13 +131,29 @@ export function Admin({ page }: { page: string }) {
       return () => clearTimeout(timeout);
     }
   }, [message]);
+  useEffect(() => {
+    if (!mobile) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobile(false);
+    };
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", escape);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", escape);
+    };
+  }, [mobile]);
   const admin = data?.role === "admin";
   const permitted = admin || ["kasir", "transaksi"].includes(page);
   return (
     <OperationError.Provider value={error}>
       <MotionConfig reducedMotion="user">
         <div className="admin-shell">
-          <aside className={`sidebar ${mobile ? "open" : ""}`}>
+          <aside
+            id="admin-navigation"
+            className={`sidebar ${mobile ? "open" : ""}`}
+          >
             <div className="side-brand">
               <Link href="/" className="wordmark">
                 ketansum<span>★</span>
@@ -214,6 +231,8 @@ export function Admin({ page }: { page: string }) {
                   className="icon-button mobile-only"
                   onClick={() => setMobile(true)}
                   aria-label="Buka navigasi"
+                  aria-expanded={mobile}
+                  aria-controls="admin-navigation"
                 >
                   <Menu />
                 </button>
@@ -239,6 +258,7 @@ export function Admin({ page }: { page: string }) {
               </div>
             )}
             <main className="admin-content">
+              <AdminPwa />
               <div className="admin-heading">
                 <div>
                   <span className="eyebrow">KETANSUM BUSINESS CLUB</span>
@@ -316,6 +336,34 @@ export function Admin({ page }: { page: string }) {
                 </motion.div>
               )}
             </main>
+            <nav className="admin-mobile-nav" aria-label="Navigasi cepat">
+              {[
+                ["kasir", "Kasir", ShoppingBag],
+                ["transaksi", "Transaksi", Receipt],
+                ...(admin ? [["laporan", "Laporan", ChartNoAxesCombined]] : []),
+              ].map(([key, label, Icon]) => {
+                const NavIcon = Icon as typeof ShoppingBag;
+                return (
+                  <Link
+                    key={String(key)}
+                    href={`/admin/${key}`}
+                    aria-current={page === key ? "page" : undefined}
+                  >
+                    <NavIcon size={21} />
+                    <span>{String(label)}</span>
+                  </Link>
+                );
+              })}
+              <button
+                onClick={() => setMobile(true)}
+                aria-label="Buka semua menu"
+                aria-expanded={mobile}
+                aria-controls="admin-navigation"
+              >
+                <Menu size={21} />
+                <span>Menu</span>
+              </button>
+            </nav>
             <div className="admin-footer">
               Ketansum · Dari ide jadi usaha.<span>Made with good taste ✦</span>
             </div>
@@ -520,7 +568,7 @@ function OrderTable({
 }) {
   return (
     <div className="table-scroll">
-      <table>
+      <table className="order-table">
         <thead>
           <tr>
             <th>Transaksi</th>
@@ -534,7 +582,7 @@ function OrderTable({
         <tbody>
           {orders.map((o) => (
             <tr key={o.id}>
-              <td>
+              <td data-label="Transaksi">
                 <strong>{o.number}</strong>
                 <small>
                   {new Intl.DateTimeFormat("id-ID", {
@@ -544,10 +592,14 @@ function OrderTable({
                   }).format(new Date(o.createdAt))}
                 </small>
               </td>
-              <td>{o.customer || "Pelanggan langsung"}</td>
-              <td>{o.method === "cash" ? "Tunai" : "QRIS"}</td>
-              <td>{rupiah(o.total)}</td>
-              <td>
+              <td data-label="Pelanggan">
+                {o.customer || "Pelanggan langsung"}
+              </td>
+              <td data-label="Pembayaran">
+                {o.method === "cash" ? "Tunai" : "QRIS"}
+              </td>
+              <td data-label="Total">{rupiah(o.total)}</td>
+              <td data-label="Status">
                 <span className={`status ${o.status}`}>
                   {
                     {

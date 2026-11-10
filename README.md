@@ -127,3 +127,16 @@ Login berjalan di server dengan cookie HttpOnly/SameSite. Pembatasan login: dela
 Pembayaran QRIS memerlukan pemeriksaan uang masuk di aplikasi merchant dan konfirmasi eksplisit. Pembatalan transaksi lunas hanya oleh admin setelah pengembalian dana manual. Tidak ada pembayaran otomatis dari foto QR.
 
 Alamat lokal operasional: `http://127.0.0.1:3000` (`APP_ORIGIN` harus cocok). Jika alamat atau port berubah, sesuaikan `APP_ORIGIN` dan restart server. Saat deployment, ganti dengan origin HTTPS situs.
+
+## Admin mobile & PWA
+
+Admin memiliki navigasi bawah pada layar HP, kartu transaksi, layout kasir satu kolom, form minimal 16px, serta jarak aman untuk notch/home indicator. Tombol **Pasang admin di HP** menawarkan instalasi jika browser mendukungnya, atau menampilkan petunjuk manual.
+
+- Android: menu browser → Instal aplikasi / Tambahkan ke layar utama.
+- iPhone: Safari → Bagikan → Tambahkan ke Layar Utama.
+- App membuka `/admin`; sesi yang berakhir tetap diarahkan ke login.
+- Untuk instalasi dari HP, deploy ke domain **HTTPS** dan set `APP_ORIGIN` ke domain tersebut. `127.0.0.1` di HP menunjuk HP itu sendiri, bukan laptop. Konfigurasi saat ini belum menyediakan URL publik.
+- Service worker aktif pada build production. Ia hanya menyimpan halaman offline generik; halaman admin, API, sesi, QRIS, dan mutasi tidak di-cache. Tidak ada antrean transaksi offline atau konfirmasi otomatis.
+- Jika koneksi putus saat menyimpan, cek riwayat transaksi setelah tersambung sebelum membuat ulang pesanan.
+
+Verifikasi deployment: buka `/manifest.webmanifest`, pasang dari Chrome Android/Safari iPhone, uji login/logout dan buka ulang ikon. Putuskan internet lalu buka ulang admin untuk melihat halaman offline. Pengujian desktop dengan viewport HP tidak menggantikan pengujian instalasi pada perangkat fisik.
