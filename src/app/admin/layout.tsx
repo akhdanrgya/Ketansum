@@ -23,7 +23,8 @@ export default async function AdminLayout({
       .select("role,active")
       .eq("id", user.id)
       .single();
-    if (!data?.active) redirect("/login");
+    if (!data?.active || !["admin", "cashier"].includes(data.role))
+      redirect("/login");
   }
   return children;
 }

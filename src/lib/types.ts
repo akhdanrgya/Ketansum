@@ -32,6 +32,8 @@ export type Order = {
   received: number;
   customer: string;
   cashierId?: string;
+  paymentReference?: string;
+  confirmedBy?: string;
 };
 export type Expense = {
   id: string;
@@ -54,9 +56,11 @@ export type Workspace = {
   expenses: Expense[];
   settings: Settings;
   role: "admin" | "cashier";
+  currentUserId?: string;
+  userName?: string;
 };
 export type Command =
-  | { type: "product"; product: Product }
+  | { type: "product"; product: Product; zeroCostConfirmed?: boolean }
   | { type: "expense"; expense: Expense }
   | { type: "settings"; settings: Settings }
   | {
@@ -66,5 +70,11 @@ export type Command =
       method: "cash" | "qris";
       customer: string;
     }
-  | { type: "pay"; id: string; received: number }
-  | { type: "cancel"; id: string; reason: string };
+  | {
+      type: "pay";
+      id: string;
+      received: number;
+      paymentVerified?: boolean;
+      paymentReference?: string;
+    }
+  | { type: "cancel"; id: string; reason: string; refundConfirmed?: boolean };

@@ -2117,3 +2117,42 @@ td strong {
     font-size: 10px;
   }
 }
+/* Operational admin refinements */
+.team-panel {
+  margin-top: 24px;
+  max-width: 960px;
+}
+.team-form {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+.team-form summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 44px;
+}
+.team-form form {
+  max-width: 480px;
+}
+.qris {
+  width: min(100%, 420px);
+  max-width: 420px;
+  max-height: none;
+  height: auto;
+  padding: 10px;
+  image-rendering: auto;
+}
+.dialog:has(.qris) {
+  width: min(540px, calc(100% - 28px));
+}
+.dialog .error {
+  padding: 12px;
+  margin-top: 12px;
+}
+.receipt h3 {
+  overflow-wrap: anywhere;
+}
+.cart .helper {
+  margin-bottom: 8px;
+}

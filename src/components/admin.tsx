@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { motion, MotionConfig } from "motion/react";
 import {
   LayoutDashboard,
@@ -28,6 +28,7 @@ import { applyCommand } from "@/lib/demo";
 import { day, report, rupiah } from "@/lib/finance";
 import type { Workspace, Command, Product, Order } from "@/lib/types";
 import { ProductArt } from "./product-art";
+import { Team } from "./admin/team";
 const links = [
   ["dashboard", "Ringkasan", LayoutDashboard],
   ["kasir", "Kasir", ShoppingBag],
@@ -38,6 +39,7 @@ const links = [
   ["konten", "Cerita & konten", NotebookPen],
   ["pengaturan", "Pengaturan", Settings],
 ] as const;
+const OperationError = createContext("");
 const storageKey = "ketansum-demo-v1";
 const titles: Record<string, string> = {
   dashboard: "Usaha kecil, cerita besar.",
@@ -71,6 +73,10 @@ export function Admin({ page }: { page: string }) {
       fetch("/api/workspace")
         .then(async (r) => {
           const result = await r.json();
+          if (r.status === 401) {
+            window.location.assign("/login");
+            return;
+          }
           if (!r.ok) throw Error(result.error);
           if (live) setData(result);
         })
@@ -100,6 +106,10 @@ export function Admin({ page }: { page: string }) {
           body: JSON.stringify(command),
         });
         const body = await response.json();
+        if (response.status === 401) {
+          window.location.assign("/login");
+          return false;
+        }
         if (!response.ok) throw Error(body.error);
         result = body;
       }
@@ -123,183 +133,196 @@ export function Admin({ page }: { page: string }) {
   const admin = data?.role === "admin";
   const permitted = admin || ["kasir", "transaksi"].includes(page);
   return (
-    <MotionConfig reducedMotion="user">
-      <div className="admin-shell">
-        <aside className={`sidebar ${mobile ? "open" : ""}`}>
-          <div className="side-brand">
-            <Link href="/" className="wordmark">
-              ketansum<span>★</span>
-            </Link>
-            <button
-              className="icon-button mobile-only"
-              onClick={() => setMobile(false)}
-              aria-label="Tutup navigasi"
-            >
-              <X />
-            </button>
-          </div>
-          <span className="side-caption">
-            RUANG TIM / {isDemo ? "DEMO LOKAL" : admin ? "ADMIN" : "KASIR"}
-          </span>
-          <nav>
-            {links
-              .filter(
-                ([key]) =>
-                  admin || !data || ["kasir", "transaksi"].includes(key),
-              )
-              .map(([key, label, Icon]) => (
-                <Link
-                  onClick={() => setMobile(false)}
-                  key={key}
-                  href={key === "dashboard" ? "/admin" : `/admin/${key}`}
-                  className={page === key ? "selected" : ""}
-                >
-                  <Icon size={19} />
-                  {label}
-                  {key === page && <span>↗</span>}
-                </Link>
-              ))}
-          </nav>
-          <div className="side-bottom">
-            <div className="side-note">
-              GOOD FOOD.
-              <br />
-              GOOD BUSINESS.<span>✦</span>
-            </div>
-            <Link href="/" className="side-back">
-              <ArrowLeft size={16} /> Lihat website
-            </Link>
-            <button
-              className="side-back"
-              onClick={async () => {
-                if (!isDemo) {
-                  await fetch("/api/auth/signout", { method: "POST" });
-                }
-                window.location.assign("/login");
-              }}
-            >
-              <LogOut size={16} /> Keluar
-            </button>
-          </div>
-        </aside>
-        {mobile && (
-          <button
-            aria-label="Tutup navigasi"
-            className="sidebar-overlay"
-            onClick={() => setMobile(false)}
-          />
-        )}
-        <div className="admin-main">
-          <header className="admin-topbar">
-            <div>
+    <OperationError.Provider value={error}>
+      <MotionConfig reducedMotion="user">
+        <div className="admin-shell">
+          <aside className={`sidebar ${mobile ? "open" : ""}`}>
+            <div className="side-brand">
+              <Link href="/" className="wordmark">
+                ketansum<span>★</span>
+              </Link>
               <button
                 className="icon-button mobile-only"
-                onClick={() => setMobile(true)}
-                aria-label="Buka navigasi"
+                onClick={() => setMobile(false)}
+                aria-label="Tutup navigasi"
               >
-                <Menu />
+                <X />
               </button>
-              <span>
-                Workspace{" "}
-                <span className="muted">
-                  / {links.find(([key]) => key === page)?.[1]}
-                </span>
-              </span>
             </div>
-            <span className="user-chip">
-              <span className="avatar">K</span>
-              {isDemo ? "Admin Demo" : admin ? "Admin" : "Kasir"}
-              <span className="online-dot" />
+            <span className="side-caption">
+              RUANG TIM / {isDemo ? "DEMO LOKAL" : admin ? "ADMIN" : "KASIR"}
             </span>
-          </header>
-          {isDemo && (
-            <div className="demo-banner">
-              <span>✦</span> MODE DEMO — Data tersimpan di browser ini, bukan
-              transaksi asli.
-            </div>
-          )}
-          <main className="admin-content">
-            <div className="admin-heading">
-              <div>
-                <span className="eyebrow">KETANSUM BUSINESS CLUB</span>
-                <h1>{titles[page]}</h1>
-                <p>
-                  {new Intl.DateTimeFormat("id-ID", {
-                    dateStyle: "full",
-                    timeZone: "Asia/Jakarta",
-                  }).format(new Date())}
-                </p>
+            <nav>
+              {links
+                .filter(
+                  ([key]) =>
+                    admin || !data || ["kasir", "transaksi"].includes(key),
+                )
+                .map(([key, label, Icon]) => (
+                  <Link
+                    onClick={() => setMobile(false)}
+                    key={key}
+                    href={key === "dashboard" ? "/admin" : `/admin/${key}`}
+                    className={page === key ? "selected" : ""}
+                  >
+                    <Icon size={19} />
+                    {label}
+                    {key === page && <span>↗</span>}
+                  </Link>
+                ))}
+            </nav>
+            <div className="side-bottom">
+              <div className="side-note">
+                GOOD FOOD.
+                <br />
+                GOOD BUSINESS.<span>✦</span>
               </div>
-              {page !== "kasir" && (
-                <Link className="button yellow-bg small" href="/admin/kasir">
-                  <Plus size={18} /> Transaksi baru
-                </Link>
-              )}
-            </div>
-            {error && (
-              <div role="alert" className="error banner">
-                {error}
-                <button onClick={() => setError("")} aria-label="Tutup pesan">
-                  ×
-                </button>
-              </div>
-            )}
-            {message && (
-              <div role="status" className="toast">
-                <Check size={16} />
-                {message}
-              </div>
-            )}
-            {!data ? (
-              <div className="panel loading">
-                {error
-                  ? "Data belum tersedia. Muat ulang setelah konfigurasi diperbaiki."
-                  : "Menyiapkan ruang tim…"}
-              </div>
-            ) : !permitted ? (
-              <div className="panel">
-                <h2>Halaman khusus admin</h2>
-                <Link href="/admin/kasir" className="button yellow-bg">
-                  Buka kasir
-                </Link>
-              </div>
-            ) : (
-              <motion.div
-                key={page}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
+              <Link href="/" className="side-back">
+                <ArrowLeft size={16} /> Lihat website
+              </Link>
+              <button
+                className="side-back"
+                onClick={async () => {
+                  if (!isDemo) {
+                    const response = await fetch("/api/auth/signout", {
+                      method: "POST",
+                    });
+                    if (!response.ok) {
+                      setError("Keluar gagal. Periksa koneksi dan coba lagi.");
+                      return;
+                    }
+                  }
+                  sessionStorage.removeItem("ketansum-cart");
+                  window.location.assign("/login");
+                }}
               >
-                {(page === "dashboard" || page === "laporan") && (
-                  <Reports data={data} detailed={page === "laporan"} />
-                )}{" "}
-                {page === "kasir" && <POS data={data} run={run} busy={busy} />}{" "}
-                {page === "produk" && (
-                  <Products data={data} run={run} busy={busy} />
-                )}{" "}
-                {page === "transaksi" && (
-                  <Transactions data={data} run={run} busy={busy} />
-                )}{" "}
-                {page === "pengeluaran" && (
-                  <Expenses data={data} run={run} busy={busy} />
-                )}{" "}
-                {(page === "pengaturan" || page === "konten") && (
-                  <Preferences
-                    data={data}
-                    run={run}
-                    busy={busy}
-                    content={page === "konten"}
-                  />
-                )}
-              </motion.div>
+                <LogOut size={16} /> Keluar
+              </button>
+            </div>
+          </aside>
+          {mobile && (
+            <button
+              aria-label="Tutup navigasi"
+              className="sidebar-overlay"
+              onClick={() => setMobile(false)}
+            />
+          )}
+          <div className="admin-main">
+            <header className="admin-topbar">
+              <div>
+                <button
+                  className="icon-button mobile-only"
+                  onClick={() => setMobile(true)}
+                  aria-label="Buka navigasi"
+                >
+                  <Menu />
+                </button>
+                <span>
+                  Workspace{" "}
+                  <span className="muted">
+                    / {links.find(([key]) => key === page)?.[1]}
+                  </span>
+                </span>
+              </div>
+              <span className="user-chip">
+                <span className="avatar">K</span>
+                {isDemo
+                  ? "Admin Demo"
+                  : data?.userName || (admin ? "Admin" : "Kasir")}
+                <span className="online-dot" />
+              </span>
+            </header>
+            {isDemo && (
+              <div className="demo-banner">
+                <span>✦</span> MODE DEMO — Data tersimpan di browser ini, bukan
+                transaksi asli.
+              </div>
             )}
-          </main>
-          <div className="admin-footer">
-            Ketansum · Dari ide jadi usaha.<span>Made with good taste ✦</span>
+            <main className="admin-content">
+              <div className="admin-heading">
+                <div>
+                  <span className="eyebrow">KETANSUM BUSINESS CLUB</span>
+                  <h1>{titles[page]}</h1>
+                  <p>
+                    {new Intl.DateTimeFormat("id-ID", {
+                      dateStyle: "full",
+                      timeZone: "Asia/Jakarta",
+                    }).format(new Date())}
+                  </p>
+                </div>
+                {page !== "kasir" && (
+                  <Link className="button yellow-bg small" href="/admin/kasir">
+                    <Plus size={18} /> Transaksi baru
+                  </Link>
+                )}
+              </div>
+              {error && (
+                <div role="alert" className="error banner">
+                  {error}
+                  <button onClick={() => setError("")} aria-label="Tutup pesan">
+                    ×
+                  </button>
+                </div>
+              )}
+              {message && (
+                <div role="status" className="toast">
+                  <Check size={16} />
+                  {message}
+                </div>
+              )}
+              {!data ? (
+                <div className="panel loading">
+                  {error
+                    ? "Data belum tersedia. Muat ulang setelah konfigurasi diperbaiki."
+                    : "Menyiapkan ruang tim…"}
+                </div>
+              ) : !permitted ? (
+                <div className="panel">
+                  <h2>Halaman khusus admin</h2>
+                  <Link href="/admin/kasir" className="button yellow-bg">
+                    Buka kasir
+                  </Link>
+                </div>
+              ) : (
+                <motion.div
+                  key={page}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {(page === "dashboard" || page === "laporan") && (
+                    <Reports data={data} detailed={page === "laporan"} />
+                  )}{" "}
+                  {page === "kasir" && (
+                    <POS data={data} run={run} busy={busy} />
+                  )}{" "}
+                  {page === "produk" && (
+                    <Products data={data} run={run} busy={busy} />
+                  )}{" "}
+                  {page === "transaksi" && (
+                    <Transactions data={data} run={run} busy={busy} />
+                  )}{" "}
+                  {page === "pengeluaran" && (
+                    <Expenses data={data} run={run} busy={busy} />
+                  )}{" "}
+                  {(page === "pengaturan" || page === "konten") && (
+                    <Preferences
+                      data={data}
+                      run={run}
+                      busy={busy}
+                      content={page === "konten"}
+                    />
+                  )}
+                </motion.div>
+              )}
+            </main>
+            <div className="admin-footer">
+              Ketansum · Dari ide jadi usaha.<span>Made with good taste ✦</span>
+            </div>
           </div>
         </div>
-      </div>
-    </MotionConfig>
+      </MotionConfig>
+    </OperationError.Provider>
   );
 }
 const periodStart = () => {
@@ -741,6 +764,14 @@ function POS({ data, run, busy }: Actions) {
     </>
   );
 }
+function DialogError() {
+  const error = useContext(OperationError);
+  return error ? (
+    <p className="error banner" role="alert">
+      {error}
+    </p>
+  ) : null;
+}
 function Dialog({
   title,
   children,
@@ -758,6 +789,7 @@ function Dialog({
   }, []);
   return (
     <dialog ref={ref} className="dialog" onCancel={close}>
+      <DialogError />
       <div className="dialog-heading">
         <h2>{title}</h2>
         <button
@@ -782,7 +814,9 @@ function OrderDialog({
   const [received, setReceived] = useState(""),
     [verified, setVerified] = useState(false),
     [cancel, setCancel] = useState(false),
-    [reason, setReason] = useState("");
+    [reason, setReason] = useState(""),
+    [refundConfirmed, setRefundConfirmed] = useState(false),
+    [paymentReference, setPaymentReference] = useState("");
   if (!o) return null;
   return (
     <Dialog
@@ -867,13 +901,23 @@ function OrderDialog({
               <p className="center">
                 {data.settings.merchant} · Bayar {rupiah(o.total)}
               </p>
+              <label>
+                Referensi pembayaran (opsional)
+                <input
+                  value={paymentReference}
+                  maxLength={100}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  placeholder="ID transaksi dari aplikasi merchant"
+                />
+              </label>
               <label className="checkbox">
                 <input
                   type="checkbox"
                   checked={verified}
                   onChange={(e) => setVerified(e.target.checked)}
                 />
-                Saya sudah memeriksa pembayaran masuk di aplikasi merchant.
+                Saya sudah memeriksa pembayaran masuk dengan nominal yang sesuai
+                di aplikasi merchant.
               </label>
             </>
           )}
@@ -890,6 +934,8 @@ function OrderDialog({
                 type: "pay",
                 id: o.id,
                 received: o.method === "cash" ? Number(received) : o.total,
+                paymentVerified: verified,
+                paymentReference,
               })
             }
           >
@@ -924,10 +970,26 @@ function OrderDialog({
                   manual. Aplikasi tidak mengirim uang.
                 </p>
               )}
+              {o.status === "paid" && (
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={refundConfirmed}
+                    onChange={(e) => setRefundConfirmed(e.target.checked)}
+                  />
+                  Dana sudah dikembalikan ke pembeli.
+                </label>
+              )}
               <button
                 className="button red-bg full"
-                disabled={busy || !reason.trim()}
-                onClick={() => run({ type: "cancel", id: o.id, reason })}
+                disabled={
+                  busy ||
+                  !reason.trim() ||
+                  (o.status === "paid" && !refundConfirmed)
+                }
+                onClick={() =>
+                  run({ type: "cancel", id: o.id, reason, refundConfirmed })
+                }
               >
                 Konfirmasi pembatalan
               </button>
@@ -1027,7 +1089,13 @@ function Products({ data, run, busy }: Actions) {
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              if (await run({ type: "product", product: editing }))
+              if (
+                await run({
+                  type: "product",
+                  product: editing,
+                  zeroCostConfirmed: zero,
+                })
+              )
                 setEditing(null);
             }}
           >
@@ -1321,154 +1389,158 @@ function Preferences({
     reader.readAsDataURL(file);
   }
   return (
-    <section className="panel settings-panel">
-      <h2>{content ? "Cerita di website" : "Identitas & pembayaran"}</h2>
-      <p>
-        {content
-          ? "Konten tersimpan akan digunakan di halaman publik."
-          : "QRIS diverifikasi manual oleh kasir setelah mengecek aplikasi merchant."}
-      </p>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          await run({ type: "settings", settings });
-        }}
-      >
-        {content ? (
-          <>
-            <label>
-              Cerita usaha
-              <textarea
-                rows={5}
-                value={settings.story}
-                onChange={(e) =>
-                  setSettings({ ...settings, story: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              Nama tim & peran
-              <textarea
-                value={settings.team}
-                onChange={(e) =>
-                  setSettings({ ...settings, team: e.target.value })
-                }
-                placeholder="Isi nama anggota tim dan perannya"
-              />
-            </label>
-            <label>
-              Refleksi / pembelajaran
-              <textarea
-                rows={4}
-                value={settings.reflection}
-                onChange={(e) =>
-                  setSettings({ ...settings, reflection: e.target.value })
-                }
-              />
-            </label>
-          </>
-        ) : (
-          <>
-            <label>
-              Nama merchant
-              <input
-                required
-                value={settings.merchant}
-                onChange={(e) =>
-                  setSettings({ ...settings, merchant: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              WhatsApp usaha (format 62… tanpa +)
-              <input
-                pattern="62[0-9]{8,13}"
-                inputMode="numeric"
-                value={settings.contact}
-                onChange={(e) =>
-                  setSettings({ ...settings, contact: e.target.value })
-                }
-                placeholder="Isi jika kontak sudah siap dipublikasikan"
-              />
-            </label>
-            <label>
-              Gambar QRIS asli
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) upload(e.target.files[0]);
-                }}
-              />
-            </label>
-            {uploadError && (
-              <p role="alert" className="error">
-                {uploadError}
-              </p>
-            )}
-            {settings.qris ? (
-              <>
-                <img
-                  className="qris"
-                  src={settings.qris}
-                  alt="Preview QRIS merchant"
+    <>
+      {" "}
+      <section className="panel settings-panel">
+        <h2>{content ? "Cerita di website" : "Identitas & pembayaran"}</h2>
+        <p>
+          {content
+            ? "Konten tersimpan akan digunakan di halaman publik."
+            : "QRIS diverifikasi manual oleh kasir setelah mengecek aplikasi merchant."}
+        </p>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await run({ type: "settings", settings });
+          }}
+        >
+          {content ? (
+            <>
+              <label>
+                Cerita usaha
+                <textarea
+                  rows={5}
+                  value={settings.story}
+                  onChange={(e) =>
+                    setSettings({ ...settings, story: e.target.value })
+                  }
                 />
+              </label>
+              <label>
+                Nama tim & peran
+                <textarea
+                  value={settings.team}
+                  onChange={(e) =>
+                    setSettings({ ...settings, team: e.target.value })
+                  }
+                  placeholder="Isi nama anggota tim dan perannya"
+                />
+              </label>
+              <label>
+                Refleksi / pembelajaran
+                <textarea
+                  rows={4}
+                  value={settings.reflection}
+                  onChange={(e) =>
+                    setSettings({ ...settings, reflection: e.target.value })
+                  }
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <label>
+                Nama merchant
+                <input
+                  required
+                  value={settings.merchant}
+                  onChange={(e) =>
+                    setSettings({ ...settings, merchant: e.target.value })
+                  }
+                />
+              </label>
+              <label>
+                WhatsApp usaha (format 62… tanpa +)
+                <input
+                  pattern="62[0-9]{8,13}"
+                  inputMode="numeric"
+                  value={settings.contact}
+                  onChange={(e) =>
+                    setSettings({ ...settings, contact: e.target.value })
+                  }
+                  placeholder="Isi jika kontak sudah siap dipublikasikan"
+                />
+              </label>
+              <label>
+                Gambar QRIS asli
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) upload(e.target.files[0]);
+                  }}
+                />
+              </label>
+              {uploadError && (
+                <p role="alert" className="error">
+                  {uploadError}
+                </p>
+              )}
+              {settings.qris ? (
+                <>
+                  <img
+                    className="qris"
+                    src={settings.qris}
+                    alt="Preview QRIS merchant"
+                  />
+                  <button
+                    type="button"
+                    className="danger-link"
+                    onClick={() => setSettings({ ...settings, qris: "" })}
+                  >
+                    Hapus QRIS
+                  </button>
+                </>
+              ) : (
+                <div className="notice">
+                  Belum ada QRIS. Pembayaran QRIS dinonaktifkan sampai gambar
+                  disimpan.
+                </div>
+              )}
+            </>
+          )}
+          <button className="button yellow-bg" disabled={busy}>
+            Simpan perubahan <Check size={17} />
+          </button>
+        </form>
+        {!content && (
+          <div className="setup-note">
+            <h3>
+              {isDemo ? "Berikutnya: hubungkan Supabase" : "Pengelolaan akun"}
+            </h3>
+            <p>
+              {isDemo
+                ? "Mode demo hanya untuk mencoba alur. Ikuti README untuk membuat project Supabase, menjalankan migrasi, dan mengaktifkan login asli."
+                : "Buat akun melalui Supabase Authentication dan tambahkan profil admin/kasir mengikuti README. Tidak ada pendaftaran publik."}
+            </p>
+            {isDemo && (
+              <>
+                <label className="checkbox">
+                  <input
+                    type="checkbox"
+                    checked={resetReady}
+                    onChange={(e) => setResetReady(e.target.checked)}
+                  />
+                  Saya ingin menghapus semua data simulasi di browser ini.
+                </label>
                 <button
                   type="button"
                   className="danger-link"
-                  onClick={() => setSettings({ ...settings, qris: "" })}
+                  disabled={!resetReady}
+                  onClick={() => {
+                    localStorage.removeItem(storageKey);
+                    sessionStorage.removeItem("ketansum-cart");
+                    window.location.reload();
+                  }}
                 >
-                  Hapus QRIS
+                  Reset demo lokal
                 </button>
               </>
-            ) : (
-              <div className="notice">
-                Belum ada QRIS. Pembayaran QRIS dinonaktifkan sampai gambar
-                disimpan.
-              </div>
             )}
-          </>
+          </div>
         )}
-        <button className="button yellow-bg" disabled={busy}>
-          Simpan perubahan <Check size={17} />
-        </button>
-      </form>
-      {!content && (
-        <div className="setup-note">
-          <h3>
-            {isDemo ? "Berikutnya: hubungkan Supabase" : "Pengelolaan akun"}
-          </h3>
-          <p>
-            {isDemo
-              ? "Mode demo hanya untuk mencoba alur. Ikuti README untuk membuat project Supabase, menjalankan migrasi, dan mengaktifkan login asli."
-              : "Buat akun melalui Supabase Authentication dan tambahkan profil admin/kasir mengikuti README. Tidak ada pendaftaran publik."}
-          </p>
-          {isDemo && (
-            <>
-              <label className="checkbox">
-                <input
-                  type="checkbox"
-                  checked={resetReady}
-                  onChange={(e) => setResetReady(e.target.checked)}
-                />
-                Saya ingin menghapus semua data simulasi di browser ini.
-              </label>
-              <button
-                type="button"
-                className="danger-link"
-                disabled={!resetReady}
-                onClick={() => {
-                  localStorage.removeItem(storageKey);
-                  sessionStorage.removeItem("ketansum-cart");
-                  window.location.reload();
-                }}
-              >
-                Reset demo lokal
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </section>
+      </section>
+      {!content && !isDemo && <Team />}
+    </>
   );
 }

@@ -11,7 +11,8 @@
     "format": "prettier --write src tests *.json *.ts *.mjs README.md",
     "format:check": "prettier --check src tests *.json *.ts *.mjs README.md",
     "supabase:check": "node --env-file=.env.local scripts/check-supabase.mjs",
-    "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs"
+    "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs",
+    "seed:business": "node --env-file=.env.local scripts/setup-business.mjs"
   },
   "engines": {
     "node": ">=22"

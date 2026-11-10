@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowLeft, ArrowUpRight, LockKeyhole } from "lucide-react";
 import { isDemo, hasSupabase } from "@/lib/data";
-import { createClient } from "@/lib/supabase/browser";
+
 export default function Login() {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -13,14 +13,25 @@ export default function Login() {
     setError("");
     try {
       const form = new FormData(e.currentTarget);
-      const { error } = await createClient().auth.signInWithPassword({
-        email: String(form.get("email")),
-        password: String(form.get("password")),
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: String(form.get("email")),
+          password: String(form.get("password")),
+        }),
       });
-      if (error) throw error;
-      window.location.assign("/admin");
-    } catch {
-      setError("Login gagal. Periksa email, password, dan koneksi.");
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error);
+      window.location.assign(
+        result.redirect === "/admin/kasir" ? "/admin/kasir" : "/admin",
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Login gagal. Periksa koneksi.",
+      );
       setBusy(false);
     }
   }
@@ -57,6 +68,7 @@ export default function Login() {
               Email
               <input
                 name="email"
+                maxLength={254}
                 type="email"
                 autoComplete="username"
                 required
@@ -69,7 +81,8 @@ export default function Login() {
                 type="password"
                 autoComplete="current-password"
                 required
-                minLength={6}
+                minLength={8}
+                maxLength={256}
               />
             </label>
             {error && (

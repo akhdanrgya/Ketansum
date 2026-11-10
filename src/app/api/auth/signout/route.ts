@@ -1,9 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { allowedOrigin, privateHeaders } from "@/lib/auth/security";
 export async function POST(request: Request) {
-  if (request.headers.get("origin") !== new URL(request.url).origin)
-    return NextResponse.json({ error: "Origin tidak valid" }, { status: 403 });
-  const db = await createClient();
-  await db.auth.signOut();
-  return NextResponse.json({ ok: true });
+  if (!allowedOrigin(request))
+    return NextResponse.json(
+      { error: "Permintaan tidak diizinkan." },
+      { status: 403, headers: privateHeaders },
+    );
+  try {
+    const db = await createClient();
+    const { error } = await db.auth.signOut({ scope: "local" });
+    if (error)
+      return NextResponse.json(
+        { error: "Keluar gagal. Coba lagi." },
+        { status: 503, headers: privateHeaders },
+      );
+    return NextResponse.json({ ok: true }, { headers: privateHeaders });
+  } catch {
+    return NextResponse.json(
+      { error: "Koneksi gagal. Coba lagi." },
+      { status: 503, headers: privateHeaders },
+    );
+  }
 }
