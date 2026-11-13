@@ -29,9 +29,11 @@ import { day, report, rupiah } from "@/lib/finance";
 import type { Workspace, Command, Product, Order } from "@/lib/types";
 import { ProductArt } from "./product-art";
 import { AdminPwa } from "./admin/pwa";
+import { Preorders, PreorderOverview } from "./admin/preorders";
 import { Team } from "./admin/team";
 const links = [
   ["dashboard", "Ringkasan", LayoutDashboard],
+  ["preorder", "Preorder", NotebookPen],
   ["kasir", "Kasir", ShoppingBag],
   ["produk", "Menu & produk", Package],
   ["transaksi", "Transaksi", Receipt],
@@ -44,6 +46,7 @@ const OperationError = createContext("");
 const storageKey = "ketansum-demo-v1";
 const titles: Record<string, string> = {
   dashboard: "Usaha kecil, cerita besar.",
+  preorder: "Catat pesanan, atur pengantaran.",
   kasir: "Ada pesanan apa hari ini?",
   produk: "Menu yang bikin kangen.",
   transaksi: "Setiap pesanan, tercatat.",
@@ -145,7 +148,7 @@ export function Admin({ page }: { page: string }) {
     };
   }, [mobile]);
   const admin = data?.role === "admin";
-  const permitted = admin || ["kasir", "transaksi"].includes(page);
+  const permitted = admin || ["dashboard", "preorder", "kasir"].includes(page);
   return (
     <OperationError.Provider value={error}>
       <MotionConfig reducedMotion="user">
@@ -173,7 +176,9 @@ export function Admin({ page }: { page: string }) {
               {links
                 .filter(
                   ([key]) =>
-                    admin || !data || ["kasir", "transaksi"].includes(key),
+                    admin ||
+                    !data ||
+                    ["dashboard", "preorder", "kasir"].includes(key),
                 )
                 .map(([key, label, Icon]) => (
                   <Link
@@ -310,9 +315,26 @@ export function Admin({ page }: { page: string }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {(page === "dashboard" || page === "laporan") && (
+                  {admin && (page === "dashboard" || page === "laporan") && (
                     <Reports data={data} detailed={page === "laporan"} />
                   )}{" "}
+                  {page === "dashboard" && <PreorderOverview data={data} />}
+                  {page === "preorder" && (
+                    <Preorders
+                      data={data}
+                      run={run}
+                      busy={busy}
+                      renderPayment={(order, close) => (
+                        <OrderDialog
+                          order={order}
+                          close={close}
+                          data={data}
+                          run={run}
+                          busy={busy}
+                        />
+                      )}
+                    />
+                  )}
                   {page === "kasir" && (
                     <POS data={data} run={run} busy={busy} />
                   )}{" "}
@@ -339,14 +361,15 @@ export function Admin({ page }: { page: string }) {
             <nav className="admin-mobile-nav" aria-label="Navigasi cepat">
               {[
                 ["kasir", "Kasir", ShoppingBag],
-                ["transaksi", "Transaksi", Receipt],
+                ["preorder", "Preorder", NotebookPen],
+                ["dashboard", "Dashboard", LayoutDashboard],
                 ...(admin ? [["laporan", "Laporan", ChartNoAxesCombined]] : []),
               ].map(([key, label, Icon]) => {
                 const NavIcon = Icon as typeof ShoppingBag;
                 return (
                   <Link
                     key={String(key)}
-                    href={`/admin/${key}`}
+                    href={key === "dashboard" ? "/admin" : `/admin/${key}`}
                     aria-current={page === key ? "page" : undefined}
                   >
                     <NavIcon size={21} />

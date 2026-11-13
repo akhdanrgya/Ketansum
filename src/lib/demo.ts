@@ -39,6 +39,30 @@ export function applyCommand(
     case "settings":
       data.settings = command.settings;
       break;
+    case "preorder_update": {
+      const o = data.orders.find(
+        (o) => o.id === command.id && o.kind === "preorder",
+      );
+      if (!o?.preorder) throw Error("Preorder tidak ditemukan.");
+      if (["cancelled", "voided"].includes(o.status))
+        throw Error("Preorder sudah dibatalkan.");
+      if (command.version !== o.preorder.version)
+        throw Error("Preorder telah diubah. Muat ulang halaman.");
+      if (
+        !command.customer.trim() ||
+        !command.preorder.address.trim() ||
+        !Number.isFinite(Date.parse(command.preorder.scheduledAt))
+      )
+        throw Error("Lengkapi nama, alamat dan jadwal.");
+      if (command.preorder.status === "completed" && o.status !== "paid")
+        throw Error("Konfirmasi pembayaran sebelum menyelesaikan preorder.");
+      if (o.status === "paid" && command.method !== o.method)
+        throw Error("Metode pembayaran lunas tidak dapat diubah.");
+      o.customer = command.customer;
+      o.method = command.method;
+      o.preorder = { ...command.preorder, version: o.preorder.version + 1 };
+      break;
+    }
     case "create": {
       if (data.orders.some((o) => o.id === command.id)) return data;
       if (!command.items.length) throw Error("Keranjang masih kosong.");
@@ -58,7 +82,24 @@ export function applyCommand(
           cost: p.cost,
         };
       });
+      if (
+        command.preorder &&
+        (!command.customer.trim() ||
+          !command.preorder.address.trim() ||
+          !Number.isFinite(Date.parse(command.preorder.scheduledAt)))
+      )
+        throw Error("Lengkapi nama, alamat dan jadwal.");
       data.orders.unshift({
+        ...(command.preorder
+          ? {
+              kind: "preorder" as const,
+              preorder: {
+                ...command.preorder,
+                status: "pending" as const,
+                version: 1,
+              },
+            }
+          : {}),
         id: command.id,
         number: `KS-${command.id.slice(0, 8).toUpperCase()}`,
         items,
@@ -94,6 +135,7 @@ export function applyCommand(
       if (!command.reason.trim()) throw Error("Alasan pembatalan wajib diisi.");
       if (o.status === "paid" && data.role !== "admin")
         throw Error("Pembatalan lunas khusus admin.");
+      if (o.preorder) o.preorder.status = "cancelled";
       if (o.status === "paid") {
         o.status = "voided";
         o.voidedAt = now;

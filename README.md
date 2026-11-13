@@ -140,3 +140,18 @@ Admin memiliki navigasi bawah pada layar HP, kartu transaksi, layout kasir satu 
 - Jika koneksi putus saat menyimpan, cek riwayat transaksi setelah tersambung sebelum membuat ulang pesanan.
 
 Verifikasi deployment: buka `/manifest.webmanifest`, pasang dari Chrome Android/Safari iPhone, uji login/logout dan buka ulang ikon. Putuskan internet lalu buka ulang admin untuk melihat halaman offline. Pengujian desktop dengan viewport HP tidak menggantikan pengujian instalasi pada perangkat fisik.
+
+## Preorder dan role tim
+
+Terapkan `supabase/migrations/202611130003_preorders.sql` setelah dua migrasi sebelumnya. Migrasi mempertahankan seluruh transaksi dan menambahkan perilaku preorder pada payload pesanan yang sama, bukan membuat pencatatan penjualan kedua.
+
+- `/admin/preorder`: pelanggan, beberapa menu/jumlah, alamat, kontak opsional, jadwal antar WIB, catatan, filter tanggal/status/pembayaran.
+- Status pengantaran: Pending → Disiapkan → Diantar → Selesai. Jadwal/status dapat diedit; Selesai memerlukan pembayaran lunas.
+- Pembayaran: belum lunas → lunas melalui detail pembayaran. QRIS tetap membutuhkan verifikasi manual di aplikasi merchant. Admin dapat membatalkan transaksi lunas setelah pengembalian dana; histori dan laporan pembalik dipertahankan, bukan menghapus pembayaran lama.
+- Pesanan dibuat sekali dengan snapshot harga/HPP. Omzet tercatat saat pembayaran dikonfirmasi; mengubah jadwal/status antar tidak menambah omzet.
+- Item yang sudah tersimpan tidak diedit; batalkan lalu buat ulang untuk mengganti menu. Perubahan jadwal bersamaan ditolak melalui nomor versi agar tidak menimpa pekerjaan tim lain.
+- Kasir: dashboard operasional, seluruh preorder tim, dan POS. Tidak dapat membuka halaman transaksi umum, produk, laporan laba/HPP, pengeluaran, konten, pengaturan atau akun tim. API/SQL tetap memeriksa role aktif.
+- Admin: seluruh menu; buat/nonaktifkan akun kasir melalui Pengaturan → Akun tim. Role ditentukan profil terlindungi di database, bukan pola nama email.
+- Kasir dapat menangani dan menerima pembayaran preorder yang dibuat tim lain. Transaksi POS biasa tetap dibatasi pada miliknya; dashboard kasir tidak menampilkan HPP atau laba.
+
+Pengujian database mencakup preorder lintas kasir, tanggal tidak valid, retry create/pay, konflik versi, larangan menyelesaikan yang belum lunas, snapshot HPP, refund khusus admin, serta akun nonaktif. Data pengujian hanya berada di database lokal sementara.

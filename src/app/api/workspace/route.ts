@@ -44,6 +44,23 @@ export async function POST(request: Request) {
         { status: 401, headers: privateHeaders },
       );
     const command = await readJson(request);
+    if (
+      command &&
+      typeof command === "object" &&
+      ("preorder" in command ||
+        ("type" in command && command.type === "preorder_update"))
+    ) {
+      const { data: current, error: checkError } =
+        await session.db.rpc("read_workspace");
+      if (checkError || current?.schemaVersion !== 3)
+        return NextResponse.json(
+          {
+            error:
+              "Preorder belum aktif. Terapkan migrasi database preorder terlebih dahulu.",
+          },
+          { status: 503, headers: privateHeaders },
+        );
+    }
     const { data, error } = await session.db.rpc("workspace_command", {
       command,
     });

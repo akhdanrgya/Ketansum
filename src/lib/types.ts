@@ -1,3 +1,11 @@
+export type PreorderDetails = {
+  scheduledAt: string;
+  address: string;
+  phone: string;
+  notes: string;
+  status: "pending" | "preparing" | "delivering" | "completed" | "cancelled";
+  version: number;
+};
 export type Product = {
   id: string;
   name: string;
@@ -19,6 +27,8 @@ export type Item = {
   cost: number;
 };
 export type Order = {
+  kind?: "preorder";
+  preorder?: PreorderDetails;
   id: string;
   number: string;
   items: Item[];
@@ -60,6 +70,14 @@ export type Workspace = {
   userName?: string;
 };
 export type Command =
+  | {
+      type: "preorder_update";
+      id: string;
+      customer: string;
+      method: "cash" | "qris";
+      version: number;
+      preorder: PreorderDetails;
+    }
   | { type: "product"; product: Product; zeroCostConfirmed?: boolean }
   | { type: "expense"; expense: Expense }
   | { type: "settings"; settings: Settings }
@@ -69,6 +87,7 @@ export type Command =
       items: { productId: string; quantity: number }[];
       method: "cash" | "qris";
       customer: string;
+      preorder?: Omit<PreorderDetails, "status" | "version">;
     }
   | {
       type: "pay";

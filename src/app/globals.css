@@ -2375,3 +2375,82 @@ td strong {
     display: none !important;
   }
 }
+
+.preorder-overview {
+  margin-top: 24px;
+}
+.preorder-summary {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+  font-size: 14px;
+}
+.preorder-form,
+.preorder-edit {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.preorder-fields,
+.preorder-products,
+.preorder-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.preorder-form fieldset {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+.preorder-filters {
+  margin: 24px 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.preorder-list {
+  display: grid;
+  gap: 18px;
+}
+.preorder-card {
+  overflow-wrap: anywhere;
+}
+.preorder-card > p,
+.preorder-card li {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 10px 0;
+}
+.preorder-card ul {
+  padding-left: 20px;
+}
+.preorder-number {
+  display: block;
+  color: #657064;
+}
+.preorder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+.preorder-edit {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 850px) {
+  .preorder-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .preorder-fields,
+  .preorder-products,
+  .preorder-filters {
+    grid-template-columns: 1fr;
+  }
+  .preorder-actions .button {
+    width: 100%;
+  }
+}

@@ -54,8 +54,9 @@ export function Team() {
     <section className="panel team-panel">
       <h2>Akun tim</h2>
       <p>
-        Kasir hanya bisa membuka kasir dan transaksinya sendiri. Akun nonaktif
-        langsung kehilangan akses data.
+        Kasir bisa membuka dashboard operasional, seluruh preorder tim, dan
+        kasir. HPP, laba, pengeluaran, pengaturan, serta akun tim hanya untuk
+        admin. Akun nonaktif langsung kehilangan akses data.
       </p>
       {error && (
         <p className="error banner" role="alert">

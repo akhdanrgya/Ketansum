@@ -4,6 +4,7 @@ import { getTeamSession } from "@/lib/auth/team";
 import { isDemo } from "@/lib/data";
 const pages = [
   "dashboard",
+  "preorder",
   "kasir",
   "produk",
   "transaksi",
@@ -25,7 +26,7 @@ export default async function Page({
     if (!session) redirect("/login");
     if (
       session.profile.role === "cashier" &&
-      !["kasir", "transaksi"].includes(page)
+      !["dashboard", "preorder", "kasir"].includes(page)
     )
       redirect("/admin/kasir");
   }

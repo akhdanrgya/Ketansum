@@ -16,6 +16,9 @@ test("migration, RPC snapshots, idempotency, and database permissions", async ()
     await db.exec(
       await readFile("supabase/migrations/202611100002_security.sql", "utf8"),
     );
+    await db.exec(
+      await readFile("supabase/migrations/202611130003_preorders.sql", "utf8"),
+    );
     const admin = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       cashier = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
     await db.exec(
@@ -166,6 +169,114 @@ test("migration, RPC snapshots, idempotency, and database permissions", async ()
       ).rows[0].count,
       1,
     );
+    // Shared preorder operations preserve finance snapshots and admin-only refunds.
+    const preorderId = "34343434-3434-4434-8434-343434343434";
+    const schedule = {
+      scheduledAt: "2026-11-19T10:00:00+07:00",
+      address: "Kelas Jordan",
+      phone: "081234567890",
+      notes: "Antar jam istirahat",
+    };
+    await assert.rejects(
+      command({
+        ...create,
+        id: preorderId,
+        preorder: { ...schedule, scheduledAt: "invalid" },
+      }),
+      /Jadwal/,
+    );
+    await command({
+      ...create,
+      id: preorderId,
+      customer: "Jordan",
+      preorder: schedule,
+    });
+    await command({
+      ...create,
+      id: preorderId,
+      customer: "Jordan",
+      preorder: schedule,
+    });
+    assert.equal(
+      (await workspace()).orders.filter((o) => o.id === preorderId).length,
+      1,
+    );
+    await db.exec("reset role");
+    await identity(cashier);
+    let po = (await workspace()).orders.find((o) => o.id === preorderId)!;
+    assert.equal(po.preorder?.status, "pending");
+    assert.equal(po.items[0].cost, 0);
+    assert.equal(po.paidAt, undefined);
+    const edit = {
+      type: "preorder_update",
+      id: preorderId,
+      version: 1,
+      customer: "Jordan",
+      method: "cash",
+      preorder: {
+        ...po.preorder,
+        scheduledAt: "2026-11-20T10:00:00+07:00",
+        status: "preparing",
+      },
+    };
+    await command(edit);
+    await assert.rejects(command(edit), /diubah/);
+    po = (await workspace()).orders.find((o) => o.id === preorderId)!;
+    assert.equal(po.total, 60000);
+    await assert.rejects(
+      command({
+        ...edit,
+        version: 2,
+        preorder: { ...po.preorder, status: "completed" },
+      }),
+      /pembayaran/,
+    );
+    await command({ type: "pay", id: preorderId, received: 60000 });
+    const paidAt = (await workspace()).orders.find(
+      (o) => o.id === preorderId,
+    )!.paidAt;
+    await command({ type: "pay", id: preorderId, received: 60000 });
+    assert.equal(
+      (await workspace()).orders.find((o) => o.id === preorderId)!.paidAt,
+      paidAt,
+    );
+    await command({
+      ...edit,
+      version: 2,
+      preorder: { ...po.preorder, status: "completed" },
+    });
+    await assert.rejects(
+      command({
+        ...edit,
+        version: 3,
+        method: "qris",
+        preorder: { ...po.preorder, status: "completed" },
+      }),
+      /Metode pembayaran lunas/,
+    );
+    await assert.rejects(
+      command({
+        type: "cancel",
+        id: preorderId,
+        reason: "refund",
+        refundConfirmed: true,
+      }),
+      /admin/,
+    );
+    await db.exec("reset role");
+    await identity(admin);
+    await command({
+      type: "cancel",
+      id: preorderId,
+      reason: "refund",
+      refundConfirmed: true,
+    });
+    po = (await workspace()).orders.find((o) => o.id === preorderId)!;
+    assert.equal(po.status, "voided");
+    assert.equal(po.preorder?.status, "cancelled");
+    assert.equal(po.items[0].cost, 9000);
+    await assert.rejects(command({ ...edit, version: 3 }), /dibatalkan/);
+    await db.exec("reset role");
     await db.exec(
       `update public.profiles set active=false where id='${cashier}'`,
     );
