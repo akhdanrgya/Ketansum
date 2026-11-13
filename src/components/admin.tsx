@@ -62,6 +62,35 @@ export function Admin({ page }: { page: string }) {
     [busy, setBusy] = useState(false),
     [mobile, setMobile] = useState(false);
   const lock = useRef(false);
+  const revision = useRef(0);
+  useEffect(() => {
+    if (isDemo || !["dashboard", "preorder"].includes(page)) return;
+    let active = true;
+    const refresh = async () => {
+      if (document.hidden || lock.current) return;
+      const version = revision.current;
+      try {
+        const response = await fetch("/api/workspace", { cache: "no-store" });
+        if (response.status === 401) {
+          window.location.assign("/login");
+          return;
+        }
+        if (!response.ok) return;
+        const current = await response.json();
+        if (active && !lock.current && version === revision.current)
+          setData(current);
+      } catch {
+        /* Keep last loaded state; never queue mutations offline. */
+      }
+    };
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [page]);
   useEffect(() => {
     let live = true;
     if (isDemo) {
@@ -94,6 +123,7 @@ export function Admin({ page }: { page: string }) {
   }, []);
   async function run(command: Command) {
     if (lock.current || !data) return false;
+    revision.current += 1;
     lock.current = true;
     setBusy(true);
     setError("");
@@ -104,11 +134,14 @@ export function Admin({ page }: { page: string }) {
         result = applyCommand(raw ? JSON.parse(raw) : data, command);
         localStorage.setItem(storageKey, JSON.stringify(result));
       } else {
-        const response = await fetch("/api/workspace", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(command),
-        });
+        const response = await fetch(
+          command.type === "review" ? "/api/preorder-review" : "/api/workspace",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(command),
+          },
+        );
         const body = await response.json();
         if (response.status === 401) {
           window.location.assign("/login");
@@ -943,6 +976,23 @@ function OrderDialog({
           </>
         )}
       </div>
+      {o.paymentProof && (
+        <div className="no-print">
+          <h3>Bukti pembayaran customer</h3>
+          <p className="helper">
+            Periksa uang masuk di aplikasi merchant. Screenshot tidak otomatis
+            membuktikan pembayaran.
+          </p>
+          <a
+            href={`/api/payment-proof/${o.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-link"
+          >
+            Buka bukti pembayaran ↗
+          </a>
+        </div>
+      )}
       {o.status === "pending" && (
         <div className="no-print">
           {o.method === "cash" ? (

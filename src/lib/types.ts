@@ -27,6 +27,8 @@ export type Item = {
   cost: number;
 };
 export type Order = {
+  source?: "public";
+  paymentProof?: boolean;
   kind?: "preorder";
   preorder?: PreorderDetails;
   id: string;
@@ -60,7 +62,19 @@ export type Settings = {
   reflection: string;
   team: string;
 };
+export type PreorderRequest = {
+  id: string;
+  number: string;
+  customer: string;
+  total: number;
+  preorder: PreorderDetails;
+  items: Omit<Item, "cost">[];
+  submittedAt: string;
+  reviewStatus: "pending" | "approved" | "rejected";
+  reviewReason?: string;
+};
 export type Workspace = {
+  preorderRequests?: PreorderRequest[];
   products: Product[];
   orders: Order[];
   expenses: Expense[];
@@ -70,6 +84,12 @@ export type Workspace = {
   userName?: string;
 };
 export type Command =
+  | {
+      type: "review";
+      id: string;
+      decision: "approved" | "rejected";
+      reason: string;
+    }
   | {
       type: "preorder_update";
       id: string;

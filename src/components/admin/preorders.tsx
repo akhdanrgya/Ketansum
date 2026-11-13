@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { PreorderRequests } from "./preorder-requests";
 import { useRef, useState, type ReactNode } from "react";
 import type { Workspace, Command, Order, PreorderDetails } from "@/lib/types";
 import { day, rupiah } from "@/lib/finance";
@@ -124,6 +125,14 @@ export function PreorderOverview({ data }: { data: Workspace }) {
         <div>
           <h2>Jadwal preorder</h2>
           <p>
+            {
+              (data.preorderRequests || []).filter(
+                (r) => r.reviewStatus === "pending",
+              ).length
+            }{" "}
+            pengajuan pelanggan menunggu persetujuan
+          </p>
+          <p>
             {orders.length} pesanan aktif ·{" "}
             {
               orders.filter((o) => day(o.preorder!.scheduledAt) === day())
@@ -201,6 +210,7 @@ export function Preorders({
   );
   return (
     <>
+      <PreorderRequests data={data} run={run} busy={busy} />
       <div className="report-toolbar">
         <button
           className="button yellow-bg"

@@ -155,3 +155,18 @@ Terapkan `supabase/migrations/202611130003_preorders.sql` setelah dua migrasi se
 - Kasir dapat menangani dan menerima pembayaran preorder yang dibuat tim lain. Transaksi POS biasa tetap dibatasi pada miliknya; dashboard kasir tidak menampilkan HPP atau laba.
 
 Pengujian database mencakup preorder lintas kasir, tanggal tidak valid, retry create/pay, konflik versi, larangan menyelesaikan yang belum lunas, snapshot HPP, refund khusus admin, serta akun nonaktif. Data pengujian hanya berada di database lokal sementara.
+
+## Preorder publik & persetujuan pelanggan
+
+Migrasi `202611130004_public_preorders.sql` sudah diterapkan pada Supabase Ketansum pada 13 November 2026. Route `/preorder` dapat diakses pelanggan tanpa akun.
+
+1. Pilih menu, nama, nomor WhatsApp, titik temu di Kampus C Telkom University, tanggal Selasa/Kamis mulai besok (hingga 60 hari), dan jam 11.00–17.00 WIB dengan pilihan per jam.
+2. Server menghitung dan mengunci snapshot harga/HPP, maksimal 50 porsi. QRIS asli baru ditampilkan setelah total dikonfirmasi server.
+3. Pelanggan membayar, lalu mengunggah screenshot JPG/PNG/WebP maksimal 1,5 MB. Gambar didekode dan dinormalisasi ke JPEG; metadata dibuang. Bukti disimpan di tabel privat, tidak ada URL publik.
+4. Submit masuk **Pengajuan pelanggan**, bukan daftar PO/omzet. Admin/kasir melihat indikator di dashboard dan memeriksa pengajuan di menu Preorder. Data diperbarui setiap 30 detik saat halaman aktif atau dengan tombol Muat ulang.
+5. **Setujui** membuat tepat satu PO berstatus pending/belum lunas. **Tolak** memerlukan alasan dan tidak membuat PO. Penolakan setelah pembayaran harus ditindaklanjuti manual lewat WhatsApp, termasuk refund jika diperlukan. Tidak ada pesan WhatsApp atau uang dikirim otomatis.
+6. Konfirmasi lunas tetap tindakan terpisah setelah uang masuk di aplikasi merchant diperiksa. Bukti tersedia melalui route yang memeriksa sesi tim aktif dan memakai no-store.
+
+Token acak sesi checkout disimpan di sessionStorage pelanggan. Simpan nomor pengajuan; tab/perangkat lain belum menyediakan pencarian pesanan berdasarkan nomor. Tidak ada data HPP dalam respons checkout atau antrean kasir. Pembatasan percobaan server memakai bucket terpisah per aksi/IP (8 per 15 menit) sehingga IP bersama dapat terkena batas bersama. Data bukti/quote saat ini disimpan di PostgreSQL; belum ada penghapusan otomatis. Tinjau retensi berdasarkan kebutuhan operasional sebelum volume besar.
+
+Pengujian: jadwal WIB, harga berubah, upload wajib, retry submit/approve, penolakan tanpa membuat PO, bukti/tabel privat ditolak untuk anonim/kasir langsung, role nonaktif ditolak, dan reschedule keluar kampus ditolak. Skenario pengajuan/pembayaran uji dijalankan pada database lokal sementara, bukan data bisnis live.

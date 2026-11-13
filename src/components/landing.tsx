@@ -51,8 +51,8 @@ export function Landing({
             <a href="#cerita">Cerita kita</a>
             <a href="#portfolio">Portfolio</a>
           </nav>
-          <a className="button small cream" href="#menu">
-            Lagi laper? <ArrowUpRight size={17} />
+          <a className="button small cream" href="/preorder">
+            Preorder yuk <ArrowUpRight size={17} />
           </a>
         </header>
         <main>
@@ -74,8 +74,8 @@ export function Landing({
                 Dua favorit, satu tempat. Dari yang manis sampai yang pedas, ada
                 rasa buat setiap mood kamu.
               </p>
-              <a href="#menu" className="button yellow-bg">
-                Temuin favoritmu <ArrowUpRight />
+              <a href="/preorder" className="button yellow-bg">
+                Preorder ke Kampus C <ArrowUpRight />
               </a>
               <span className="hero-note">Jajan enak, bikin happy!</span>
             </motion.div>

@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     ) {
       const { data: current, error: checkError } =
         await session.db.rpc("read_workspace");
-      if (checkError || current?.schemaVersion !== 3)
+      if (checkError || !(current?.schemaVersion >= 3))
         return NextResponse.json(
           {
             error:
