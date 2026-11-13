@@ -3,13 +3,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { deliveryDates, validDelivery } from "../src/lib/preorder-schedule";
-test("jadwal publik hanya Selasa/Kamis 11–17 WIB mulai besok", () => {
+test("jadwal publik hanya Senin/Kamis 10.30–13.00 WIB mulai besok", () => {
   const now = new Date("2026-11-16T18:00:00Z"); // Tuesday in Jakarta
+  assert.equal(validDelivery("2026-11-23", "10:30", now), true);
+  assert.equal(validDelivery("2026-11-24", "11:00", now), false);
+  assert.equal(validDelivery("2026-11-19", "13:30", now), false);
   const dates = deliveryDates(now);
   assert.equal(dates[0], "2026-11-19");
   assert.equal(validDelivery("2026-11-17", "11:00", now), false);
   assert.equal(validDelivery("2026-11-19", "10:00", now), false);
-  assert.equal(validDelivery("2026-11-19", "17:00", now), true);
+  assert.equal(validDelivery("2026-11-19", "13:00", now), true);
   assert.equal(validDelivery("2026-11-19", "18:00", now), false);
 });
 test("pengajuan publik privat, idempotent, dan masuk PO hanya setelah persetujuan tim", async () => {
@@ -23,6 +26,7 @@ test("pengajuan publik privat, idempotent, dan masuk PO hanya setelah persetujua
       "202611100002_security.sql",
       "202611130003_preorders.sql",
       "202611130004_public_preorders.sql",
+      "202611130005_delivery_schedule.sql",
     ])
       await db.exec(await readFile("supabase/migrations/" + f, "utf8"));
     const cashier = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -38,7 +42,7 @@ test("pengajuan publik privat, idempotent, dan masuk PO hanya setelah persetujua
       meetingPoint: "Lobi",
       notes: "Test lokal",
       date: deliveryDates()[0],
-      time: "11:00",
+      time: "10:30",
       items: [
         { productId: "11111111-1111-4111-8111-111111111111", quantity: 1 },
         { productId: "55555555-5555-4555-8555-555555555555", quantity: 2 },
@@ -63,7 +67,7 @@ test("pengajuan publik privat, idempotent, dan masuk PO hanya setelah persetujua
     );
     await assert.rejects(
       quote("b".repeat(64), { ...req, date: "2020-01-07" }),
-      /Selasa/,
+      /Senin/,
     );
     await assert.rejects(
       quote("b".repeat(64), { ...req, expectedTotal: 1 }),
@@ -78,6 +82,8 @@ test("pengajuan publik privat, idempotent, dan masuk PO hanya setelah persetujua
     assert.equal((await quote("a".repeat(64), {})).number, q.number);
     await db.exec("reset role");
     await db.exec("update products set price=99999;");
+    // Previously quoted Tuesday requests remain reviewable after the schedule change.
+    await db.exec(`update preorder_quotes set payload=jsonb_set(payload,'{preorder,scheduledAt}','"2026-11-17T04:00:00.000Z"'::jsonb);`);
     await db.exec("set role service_role");
     await assert.rejects(
       scalar("select public.public_preorder_submit($1,$2) result", [

@@ -8,6 +8,7 @@ import {
   deliveryDateLabel,
   deliveryTimes,
 } from "@/lib/preorder-schedule";
+import { PreorderWhatsApp } from "./preorder-whatsapp";
 import { ProductArt } from "./product-art";
 type Quote = {
   items?: { name: string; quantity: number; price: number }[];
@@ -34,6 +35,8 @@ export function PublicPreorder({
     [ready, setReady] = useState(false),
     [proof, setProof] = useState(""),
     [fileName, setFileName] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [meetingPoint, setMeetingPoint] = useState("");
   const token = useRef("");
   const total = products.reduce(
     (sum, p) => sum + p.price * (quantities[p.id] || 0),
@@ -101,8 +104,8 @@ export function PublicPreorder({
           Ketemu di kampus!
         </h1>
         <p className="checkout-intro">
-          Khusus <strong>{CAMPUS}</strong>. Pengiriman Selasa & Kamis, pukul{" "}
-          <strong>11.00–17.00 WIB</strong>. Pilih tanggal mulai besok, maksimal
+          Khusus <strong>{CAMPUS}</strong>. Pengiriman Senin & Kamis, pukul{" "}
+          <strong>10.30–13.00 WIB</strong>. Pilih tanggal mulai besok, maksimal
           60 hari ke depan. Titik temu dikonfirmasi lewat WhatsApp.
         </p>
         <div className="notice">
@@ -157,6 +160,11 @@ export function PublicPreorder({
                       ? "Pengajuan ditolak. Tim akan menghubungi kamu melalui WhatsApp. Jangan membayar ulang."
                       : "Menunggu persetujuan admin/kasir. Pesanan belum masuk daftar PO. Simpan nomor pengajuan ini."}
                 </p>
+                <PreorderWhatsApp
+                  order={quote}
+                  meetingPoint={meetingPoint}
+                  proof={proofFile}
+                />
                 <button
                   className="button yellow-bg"
                   disabled={busy}
@@ -185,6 +193,10 @@ export function PublicPreorder({
                     } catch {}
                     token.current = "";
                     setQuote(null);
+                    setProofFile(null);
+                    setMeetingPoint("");
+                    setProof("");
+                    setFileName("");
                     setQuantities({});
                     setError("");
                   }}
@@ -240,6 +252,7 @@ export function PublicPreorder({
                       onChange={async (e) => {
                         setProof("");
                         setFileName("");
+                        setProofFile(null);
                         setError("");
                         const file = e.target.files?.[0];
                         if (!file) return;
@@ -266,6 +279,7 @@ export function PublicPreorder({
                             },
                           );
                           setProof(result);
+                          setProofFile(file);
                           setFileName(file.name);
                         } catch {
                           setError("File gagal dibaca. Pilih ulang gambar.");
@@ -310,6 +324,7 @@ export function PublicPreorder({
               setBusy(true);
               try {
                 remember();
+                setMeetingPoint(String(values.get("meetingPoint") || ""));
                 setQuote(
                   await call({
                     action: "quote",
@@ -386,7 +401,7 @@ export function PublicPreorder({
                 <label>
                   Tanggal antar
                   <select name="date" required>
-                    <option value="">Pilih Selasa atau Kamis</option>
+                    <option value="">Pilih Senin atau Kamis</option>
                     {dates.map((d) => (
                       <option value={d} key={d}>
                         {deliveryDateLabel(d)}

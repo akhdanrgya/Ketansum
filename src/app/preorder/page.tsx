@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Preorder Kampus C",
   description:
-    "Pesan ketan susu dan dimsum. Pengiriman ke Kampus C Telkom University setiap Selasa dan Kamis, pukul 11.00–17.00 WIB.",
+    "Pesan ketan susu dan dimsum. Pengiriman ke Kampus C Telkom University setiap Senin dan Kamis, pukul 10.30–13.00 WIB.",
 };
 export default async function Page() {
   const db = await createClient();

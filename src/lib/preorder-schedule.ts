@@ -14,18 +14,17 @@ export function deliveryDates(now = new Date()) {
     (_, i) => new Date(start.getTime() + (i + 1) * 86400000),
   )
     .filter((d) =>
-      [2, 4].includes(new Date(jakartaDate(d) + "T00:00:00Z").getUTCDay()),
+      [1, 4].includes(new Date(jakartaDate(d) + "T00:00:00Z").getUTCDay()),
     )
     .map((d) => jakartaDate(d));
 }
 export const deliveryTimes = [
+  "10:30",
   "11:00",
+  "11:30",
   "12:00",
+  "12:30",
   "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
 ];
 export function validDelivery(date: string, time: string, now = new Date()) {
   return deliveryDates(now).includes(date) && deliveryTimes.includes(time);
